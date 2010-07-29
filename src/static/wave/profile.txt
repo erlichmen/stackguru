@@ -1,0 +1,5 @@
+{
+  "profileUrl": "http://stackguru.appspot.com/",  
+  "imageUrl": "http://stackapps.com/apps/icon/59",
+  "name": "StackGuru"
+}

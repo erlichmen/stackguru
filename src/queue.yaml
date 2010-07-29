@@ -1,0 +1,11 @@
+queue:
+- name: default
+  rate: 1/s
+- name: comments
+  rate: 1/s
+- name: answers
+  rate: 1/s
+- name: ranks
+  rate: 1/s
+- name: scannewquestions
+  rate: 5/s

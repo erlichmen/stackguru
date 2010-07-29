@@ -1,0 +1,8 @@
+cron:
+- description: new questions scan
+  url: /tasks/scan_new_questions/
+  schedule: every 2 minutes
+- description: search for comments in answers
+  url: /tasks/scan_new_comments/
+  schedule: every 2 minutes
+  
