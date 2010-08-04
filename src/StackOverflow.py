@@ -30,15 +30,15 @@ class Api:
         else:
             raise Exception(respose.status_code)
 
-    def help(self):
+    def is_domain_avaliable(self):
         try:
             respose = self._fetch("help", raw_result=True)
             if respose.status_code == 200:
-                return json.loads(respose.content)
+                return True
             else:
-                return None
+                return False
         except:
-            return None
+            return False
         
     def search(self, q, pagesize = 5, page=1):
         result = self._fetch("questions", {'intitle': urllib.quote(q), 'pagesize': pagesize, 'page': page})

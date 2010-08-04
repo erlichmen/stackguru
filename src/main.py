@@ -74,7 +74,15 @@ class XmppHandler(xmpp_handlers.CommandHandler):
 
     def google_command(self, message=None):
         """search <text>\nsearch text using Google custom search\nreutrns links to the questions"""
-        api = GoogleSearch.GoogleSearch()
+        follower_id = self._get_current_follower(message)
+        
+        default_domain = globals.default_domain if not follower_id.domain else follower_id.domain
+        
+        if default_domain != "stackoverflow.com":
+            self.reply("Sorry but the google command works only on the stackoverflow domain")
+            return
+        
+        api = GoogleSearch.GoogleSearch()        
         
         results = api.search(message.arg)
         self._reply_search_result(results, message)
@@ -408,12 +416,12 @@ class XmppHandler(xmpp_handlers.CommandHandler):
         check_domain = True
         if domain in globals.domain_alias:
             domain = globals.domain_alias[domain]
-            check_domain = False                    
+            check_domain = False   
         elif domain.find('.') == -1:
-            domain = domain + '.com'
+            domain = domain + ".stackexchange.com"
         
         api = StackOverflow.Api(domain)
-        if check_domain and not api.help():
+        if check_domain and not api.is_domain_avaliable():
             msg = "Invalid domain"
         else:
             follower.domain = domain
