@@ -316,7 +316,7 @@ class XmppHandler(xmpp_handlers.CommandHandler):
             self._follow_questions(follower_id, im_from, message, question_tags)
             
         if len(actual_tags) > 1:
-            msg = "OK! I will let you know once a questions on those topics is asked"
+            msg = "OK! I will let you know once a question on those topics is asked"
             message.reply(msg)
         elif len(actual_tags) == 1:
             msg = "OK! I will let you know once a question on this topic is asked"            
