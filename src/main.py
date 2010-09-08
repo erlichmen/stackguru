@@ -25,14 +25,14 @@ class XmppHandler(xmpp_handlers.CommandHandler):
             message.reply(result["url"])
             
         follower = self._get_current_follower(message)
-        
+
         if follower != None and "moreResultsUrl" in results:
             msg = "you can can more search results by calling /more"
             message.reply(msg)
-            
+
             follower.more_search = results["moreResultsUrl"] 
             follower.put()
-    
+
     def _reply_stackoverflow_search_result(self, domain, results, message=None):
         if 'questions' in results:
             for question in results["questions"]: 
@@ -42,13 +42,13 @@ class XmppHandler(xmpp_handlers.CommandHandler):
     def text_message(self, message=None):
         if len(message.arg) == 0:
             return
-        
+
         logging.debug("arg: %s" % (message.arg,))
         logging.debug("body: %s" % (message.body,))
         params = message.arg.split(" ", 1) 
-        command = params[0] + "_command"
+        command = params[0].lower() + "_command"
         method = getattr(self, command, None) 
-        
+
         if callable(method):
             if len(params) > 1:
                 body = params[1]
@@ -56,11 +56,11 @@ class XmppHandler(xmpp_handlers.CommandHandler):
                 body = ""
             
             new_message = xmpp.Message({'from': message.sender, 'to': message.to, 'body': body})
-                 
+
             method(new_message)
         else: #unknown command 
             message.reply("I don't know how to '%s'" % (params[0], ))
-    
+
     def search_command(self, message=None):
         """search <text>\nsearch text using stackapps API\nreutrns links to the questions"""
         follower_id = self._get_current_follower(message)
@@ -79,9 +79,9 @@ class XmppHandler(xmpp_handlers.CommandHandler):
         default_domain = globals.default_domain if not follower_id.domain else follower_id.domain
         
         if default_domain != "stackoverflow.com":
-            self.reply("Sorry but the google command works only on the stackoverflow domain")
+            message.reply("Sorry but the google command works only on the stackoverflow domain")
             return
-        
+
         api = GoogleSearch.GoogleSearch()        
         
         results = api.search(message.arg)
