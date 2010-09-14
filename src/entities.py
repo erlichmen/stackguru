@@ -10,7 +10,7 @@ class FollowerId(db.Model):
     filter_user_rate = db.IntegerProperty(required=False)
     mute = db.BooleanProperty(required=False)
     domain = db.StringProperty(required=False)
-    created = db.DateTimeProperty(auto_add_now=True)
+    created = db.DateTimeProperty(auto_now_add=True)
     @staticmethod
     def create(im_from):
         keyname = str(im_from)
@@ -39,7 +39,7 @@ class Tag(db.Model):
             return q
         else:        
             return Tag.get_or_insert(keyname, name=tag) 
-    
+
 class Follower(db.Model):    
     follower = db.IMProperty(required=True) 
     tag = db.ReferenceProperty(Tag, required=True)
@@ -48,7 +48,7 @@ class Follower(db.Model):
     filter_user_rate = db.IntegerProperty(required=False)
     snooze = db.IMProperty(required=False)
     domain = db.StringProperty(required=False)
-        
+    created = db.DateTimeProperty(auto_now_add=True)
     @staticmethod
     def create(keyname, db_tab, domain, im_from, follower_id):        
         if globals.USING_SDK:

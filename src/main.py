@@ -269,7 +269,7 @@ class XmppHandler(xmpp_handlers.CommandHandler):
         message.reply(msg)
                         
     def follow_command(self, message=None): 
-        """follow <tag>,<question id>...\nget notifications each time a new question is posted on a specific tag\nCalling follow without params will return the topics and questions that you're following""" 
+        """follow <tag>,<question id>...\nget notifications each time a new question is posted on a specific tag\nCalling follow without any parameters will return the topics and questions that you're following.""" 
         im_from = db.IM("xmpp", get_bare_jid(message.sender))
                                         
         if len(message.arg) == 0:
