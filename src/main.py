@@ -181,56 +181,69 @@ class XmppHandler(xmpp_handlers.CommandHandler):
         return map(lambda tag: tag.strip().lower(), tags.split(','))
         
     def unfollow_command(self, message=None):
-        """unfollow <tag>,<question id>...\nstop notifications for specific tags or question ids""" 
+        """unfollow <tag>,<question id>...\nstop notifications for specific tags or question ids\nPassing *, all or everything will make you unfollow everything.""" 
         im_from = db.IM("xmpp", get_bare_jid(message.sender))
-        
-        key_names = []        
+
+        key_names = []
         tags = XmppHandler._get_tags(message.arg)
         logging.debug(tags)
-        for tag in tags:
-            key_names.append(tag_to_key_name(tag))
-                            
-        db_tags = Tag.get_by_key_name(key_names)
 
-        logging.debug(db_tags)
-        
         items = []
         followers = []
-        for db_tag in db_tags:
-            if not db_tag:
-                continue
-            
-            follower_query = Follower.all().filter('follower', im_from).filter('tag', db_tag.key())  
+
+        if len(tags) == 1 and tags[0].lower() in ('*', 'all', 'everything'):
+            question_query = QuestionFollower.all().filter('follower', im_from)
+            follower_query = Follower.all().filter('follower', im_from)
+
+            for follower in question_query:
+                followers.append(follower)
+                items.append(str(follower.question.question_id));
+
             for follower in follower_query:
                 followers.append(follower)
-                items.append(tag)
-        
+                items.append(follower.tag.name);
+        else:
+            for tag in tags:
+                key_names.append(tag_to_key_name(tag))
 
-        follower_query = QuestionFollower.all().filter('follower', im_from)
-                    
-        for follower in follower_query:
-            # TODO: prefetch question
-            if str(follower.question.question_id) in key_names:
-                followers.append(follower)
-                items.append(str(follower.question.question_id))
+            db_tags = Tag.get_by_key_name(key_names)
+
+            logging.debug(db_tags)
+
+            for db_tag in db_tags:
+                if not db_tag:
+                    continue
+
+                follower_query = Follower.all().filter('follower', im_from).filter('tag', db_tag.key())
+                for follower in follower_query:
+                    followers.append(follower)
+                    items.append(follower.tag.name)
+
+            follower_query = QuestionFollower.all().filter('follower', im_from)
+
+            for follower in follower_query:
+                # TODO: prefetch question
+                if str(follower.question.question_id) in key_names:
+                    followers.append(follower)
+                    items.append(str(follower.question.question_id))
         
         if len(followers) > 0:
             msg = "you are no longer following: %s" % (",".join(items),)
             db.delete(followers)
         else:
             msg = "you are not following %s" % message.arg
-            
+
         message.reply(msg)
-             
+
     def _nice_domain_name(self, domain):
         return domain
-    
+
     def following_command(self, message=None): 
         im_from = db.IM("xmpp", get_bare_jid(message.sender))
         follower_id = self._get_current_follower(message)
         query = Follower.gql('where follower=:1', im_from)
         tags = []
-        
+
         default_domain = globals.default_domain if not follower_id.domain else follower_id.domain
                 
         for follower in query:
@@ -256,7 +269,7 @@ class XmppHandler(xmpp_handlers.CommandHandler):
         message.reply(msg)
                         
     def follow_command(self, message=None): 
-        """follow <tag>,<question id>...\nget notifications each time a new question is posted on a specific tag""" 
+        """follow <tag>,<question id>...\nget notifications each time a new question is posted on a specific tag\nCalling follow without params will return the topics and questions that you're following""" 
         im_from = db.IM("xmpp", get_bare_jid(message.sender))
                                         
         if len(message.arg) == 0:

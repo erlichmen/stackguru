@@ -10,6 +10,7 @@ class FollowerId(db.Model):
     filter_user_rate = db.IntegerProperty(required=False)
     mute = db.BooleanProperty(required=False)
     domain = db.StringProperty(required=False)
+    created = db.DateTimeProperty(auto_add_now=True)
     @staticmethod
     def create(im_from):
         keyname = str(im_from)
