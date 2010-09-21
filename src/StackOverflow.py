@@ -31,6 +31,15 @@ class Api:
         self.domain = domain
 
     @staticmethod
+    def full_domain_name(domain):
+        if domain in domain_alias:
+            return domain_alias[domain]
+        elif domain.find('.') == -1:
+            return domain + ".stackexchange.com"
+        
+        return domain
+    
+    @staticmethod
     def get_and_validate(domain):
         check_domain = True
         if domain in domain_alias:

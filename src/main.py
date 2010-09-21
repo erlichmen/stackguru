@@ -397,14 +397,15 @@ class XmppHandler(xmpp_handlers.CommandHandler):
                 
         domain = message.arg.strip().lower()
         
-        api = StackOverflow.Api.get_and_validate(domain)
+        full_domain_name = StackOverflow.Api.full_domain_name(domain) 
+        api = StackOverflow.Api.get_and_validate(full_domain_name)
                 
         if not api:
             msg = "Invalid domain"
         else:
-            follower.domain = domain
+            follower.domain = full_domain_name
             follower.put() 
-            msg = "Your new default domain is now %s" % (domain,)
+            msg = "Your new default domain is now %s" % (full_domain_name,)
             
         message.reply(msg)
         
