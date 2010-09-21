@@ -1,0 +1,2 @@
+stackGuruToken = "{{ token }}"
+stackGuruAddress = "{{ address }}"

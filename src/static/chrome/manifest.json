@@ -1,0 +1,13 @@
+{
+  "name": "StackGuru Integration",
+  "version": "{{version}}",
+  "update_url": "{{update_url}}",
+  "description": "Integrates StackGuru into the Stackoverflow site.",
+  "icons": { "128": "icon48.png" },
+  "permissions": [
+    "{{base_url}}"
+  ],
+  "content_scripts": [
+    { "matches": ["*://*.stackoverflow.com/questions/*", "*://*.stackexchange.com/questions/*"], "js": ["jquery.min.js", "followLink.js"] }
+  ]
+}

@@ -18,6 +18,17 @@ handlers:
   script: tasks/scan_new_comments.py  
 - url: /comments/(.*)
   script: tasks/scan_new_comments.py
+
+- url: /chrome/(.*)
+  script: chrome.py
+
+- url: /c/(.*)
+  script: short_urls.py
+
+- url: /follow/(.*)
+  script: follow_question.py
+- url: /unfollow/(.*)
+  script: follow_question.py
   
 - url: /_wave/robot/profile
   static_files: static/wave/profile.txt  

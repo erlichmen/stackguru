@@ -19,6 +19,9 @@ google_api_key = PUT-YOUR-GOOGLE-API-KEY-HERE
 stack_api_key = PUT-YOU-STACK-APPS-KEY-HERE
 max_follow_tags = 10
 
+#Chrome extension
+chrome_extension_version = "0.3.4"
+
 if USING_SDK:
     debug_mode = True
 else:
@@ -26,23 +29,3 @@ else:
     
 ranks_page_size = 10
 ranks_limit = 10000
-
-domain_alias = {
-                'so': 'stackoverflow.com', 
-                'sf': 'serverfault.com', 
-                'su': 'superuser.com',
-                'meta': 'meta.stackoverflow.com',
-                'stackoverflow': 'stackoverflow.com', 
-                'stackoverflow.com': 'stackoverflow.com',
-                'www.stackoverflow.com': 'stackoverflow.com',
-                'serverfault': 'serverfault.com', 
-                'serverfault.com': 'serverfault.com',
-                'www.serverfault.com': 'serverfault.com',
-                'superuser': 'superuser.com', 
-                'superuser.com': 'superuser.com',
-                'www.superuser.com': 'superuser.com',
-                'meta.stackoverflow.com': 'meta.stackoverflow.com',
-                'stackapps': 'stackapps.com', 
-                'stackapps.com': 'stackapps.com',
-                'www.stackapps.com': 'stackapps.com',
-                }

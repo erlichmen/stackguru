@@ -4,12 +4,47 @@ import simplejson as json
 import globals
 import urllib
 
+domain_alias = {
+                'so': 'stackoverflow.com', 
+                'sf': 'serverfault.com', 
+                'su': 'superuser.com',
+                'meta': 'meta.stackoverflow.com',
+                'stackoverflow': 'stackoverflow.com', 
+                'stackoverflow.com': 'stackoverflow.com',
+                'www.stackoverflow.com': 'stackoverflow.com',
+                'serverfault': 'serverfault.com', 
+                'serverfault.com': 'serverfault.com',
+                'www.serverfault.com': 'serverfault.com',
+                'superuser': 'superuser.com', 
+                'superuser.com': 'superuser.com',
+                'www.superuser.com': 'superuser.com',
+                'meta.stackoverflow.com': 'meta.stackoverflow.com',
+                'stackapps': 'stackapps.com', 
+                'stackapps.com': 'stackapps.com',
+                'www.stackapps.com': 'stackapps.com',
+                }
+
 class Api:    
     def __init__(self, domain = globals.default_domain):
         self.api_version = 1.0
         self.appkey = globals.stack_api_key
         self.domain = domain
 
+    @staticmethod
+    def get_and_validate(domain):
+        check_domain = True
+        if domain in domain_alias:
+            domain = domain_alias[domain]
+            check_domain = False   
+        elif domain.find('.') == -1:
+            domain = domain + ".stackexchange.com"
+        
+        api = Api(domain)
+        if check_domain and not api.is_domain_avaliable():
+            return None
+    
+        return api
+     
     @staticmethod
     def _csv_ids(ids):
         return "%3B".join(map(lambda id: str(id), ids))
