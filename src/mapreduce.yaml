@@ -1,0 +1,15 @@
+mapreduce:
+- name: Convert to new db(QuestionFollower)
+  mapper:
+    input_reader: mapreduce.input_readers.DatastoreInputReader
+    handler: tasks.new_db.process1
+    params:
+    - name: entity_kind
+      default: entities.QuestionFollower
+- name: Convert to new db(Follower)
+  mapper:
+    input_reader: mapreduce.input_readers.DatastoreInputReader
+    handler: tasks.new_db.process2
+    params:
+    - name: entity_kind
+      default: entities.Follower      
