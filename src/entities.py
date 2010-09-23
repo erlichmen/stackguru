@@ -22,6 +22,7 @@ class Tag(db.Model):
     domain = db.StringProperty(default=globals.default_domain)
     @staticmethod
     def create(tag):
+        tag = tag.lower()
         keyname = tag
         return Tag.get_or_insert(keyname, name=tag)
 
@@ -34,12 +35,14 @@ class Follower(db.Model):
     snooze = db.IMProperty(required=False)
     domain = db.StringProperty(required=False)
     created = db.DateTimeProperty(auto_now_add=True)
+    tag_name = db.StringProperty(required=False)    
     @staticmethod
-    def create(keyname, db_tab, domain, follower_id):        
+    def create(keyname, db_tag, domain, follower_id):        
         Follower.get_or_insert(keyname,
-                                tag=db_tab,
+                                tag=db_tag,
                                 follower=follower_id.user,
                                 mute=follower_id.mute,
+                                tag_name=db_tag.tag.name,
                                 filter_user_rep=follower_id.filter_user_rep,
                                 filter_user_rate=follower_id.filter_user_rate,
                                 domain=domain,
@@ -77,8 +80,11 @@ class Question(db.Model):
         
 class QuestionFollower(db.Model):    
     follower = db.IMProperty(required=True)
-    question = db.ReferenceProperty(Question, required=True)  
+    question = db.ReferenceProperty(Question, required=True, collection_name="followers")
+    domain = db.StringProperty(required=False) 
+    question_id = db.IntegerProperty(required=False)
+    
     @staticmethod
     def create(question, follower):
         keyname = "%s%d%s" % (follower.address, question.question_id,question.domain)
-        return QuestionFollower.get_or_insert(keyname, follower = follower, question = question)    
+        return QuestionFollower.get_or_insert(keyname, follower = follower, question = question, question_id = question.question_id, domain = question.domain)    

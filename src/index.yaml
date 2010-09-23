@@ -12,6 +12,11 @@ indexes:
 
 - kind: Follower
   properties:
+  - name: __key__
+    direction: desc
+
+- kind: Follower
+  properties:
   - name: domain
   - name: tag
   - name: mute
@@ -20,3 +25,8 @@ indexes:
   properties:
   - name: tag
   - name: mute
+
+- kind: QuestionFollower
+  properties:
+  - name: __key__
+    direction: desc

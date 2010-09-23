@@ -29,7 +29,11 @@ handlers:
   script: follow_question.py
 - url: /unfollow/(.*)
   script: follow_question.py
-  
+
+- url: /mapreduce(/.*)?
+  script: mapreduce/main.py
+  login: admin
+    
 - url: /_wave/robot/profile
   static_files: static/wave/profile.txt  
   upload: static/wave/profile.txt  
