@@ -4,7 +4,7 @@ from google.appengine.api.labs.taskqueue import Task, Queue
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp.util import run_wsgi_app
 from publisher import Publisher
-from entities import QuestionsScanner, Follower
+from entities import QuestionsScanner
 import globals
 
 class ScanNewQuestions(webapp.RequestHandler):
@@ -25,22 +25,19 @@ class ScanNewQuestions(webapp.RequestHandler):
                 logging.info('question: %d is new on %s' % (question['question_id'], domain,))
                 
                 Publisher._append_tags(tags, question)
-
-            settings.last_question = questions[0]['question_id']
-            settings.put() 
     
-            Publisher._publish_tags(domain, tags)
+            if len(tags) > 0:
+                settings.last_question = questions[0]['question_id']
+                settings.put() 
+                
+                Publisher._publish_tags(domain, tags)
+            else:
+                logging.info('Nothing to publish')
         else:
             logging.error('no questions!?')
 
     def get(self, domain):
-        if domain == 'fix':
-            q = list(Follower.all())
-            for follower in q:
-                follower.domain = "stackoverflow.com"
-                follower.put()            
-        else:
-            self._scan(domain)
+        self._scan(domain)
 
     def post(self, domain):
         self._scan(domain)

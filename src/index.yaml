@@ -26,6 +26,11 @@ indexes:
   - name: tag
   - name: mute
 
+- kind: Follower2
+  properties:
+  - name: domain
+  - name: mute
+
 - kind: QuestionFollower
   properties:
   - name: __key__

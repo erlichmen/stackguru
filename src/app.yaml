@@ -1,5 +1,5 @@
 application: stackguru
-version: 1
+version: 2
 runtime: python
 api_version: 1
 
@@ -30,10 +30,24 @@ handlers:
 - url: /unfollow/(.*)
   script: follow_question.py
 
+- url: /tag/(.*)
+  script: follow_tag.py
+- url: /untag/(.*)
+  script: follow_tag.py
+
+- url: /tag/(.*)
+  script: follow_tag.py
+- url: /untag/(.*)
+  script: follow_tag.py
+
 - url: /mapreduce(/.*)?
   script: mapreduce/main.py
   login: admin
-    
+
+- url: /test.*
+  script: gaeunit.py
+  login: admin
+  
 - url: /_wave/robot/profile
   static_files: static/wave/profile.txt  
   upload: static/wave/profile.txt  

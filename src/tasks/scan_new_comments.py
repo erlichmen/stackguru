@@ -77,7 +77,7 @@ class ScanNewAnswers(webapp.RequestHandler):
                 else:
                     msg = "New answer from %s: %s" % (name,  url)
                 
-                followers = list(question.questionfollower_set)
+                followers = list(question.followers)
                 jids = map(lambda follower: follower.follower.address, followers)
                 if len(jids) > 0:
                     logging.debug('sending message to %s' % (jids,))            
@@ -161,7 +161,7 @@ class ScanNewComments(webapp.RequestHandler):
         short_urls = self._shorten_comments(domain, comments)
         
         for question in comments:                    
-            followers = list(question.questionfollower_set)
+            followers = list(question.followers)
             jids = map(lambda follower: follower.follower.address, followers)
             for comment in comments[question]:
                 owner = comment['owner']

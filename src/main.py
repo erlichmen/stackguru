@@ -1,16 +1,19 @@
 from google.appengine.api import xmpp
 from google.appengine.ext import webapp
+from google.appengine.ext import db
 from google.appengine.ext.webapp.util import run_wsgi_app
 from google.appengine.ext.webapp import xmpp_handlers
 import globals
 import logging, math
 import GoogleSearch
 import StackOverflow
-from entities import * 
+from entities import InvalidTag, FollowerId, Follower2
 from gen_utils import *
 from publisher import question_url
 from datetime import datetime
-from follow_question import follow_questions, TooManyQuestions, follow_tags, InvalidQuestions, delete_following_ids
+from follow_question import follow_questions, unfollow_questions, unfollow_questions_all, TooManyQuestions, InvalidQuestions, following_ids
+from follow_tag import follow_tags, unfollow_tags, unfollow_tags_all, following_tags, TooManyTags
+
 from chrome import ShortUrls
             
 def get_bare_jid(im_addr):
@@ -105,7 +108,7 @@ class XmppHandler(xmpp_handlers.CommandHandler):
 
     def _get_current_followers(self, message):
         im_from = db.IM("xmpp", get_bare_jid(message.sender))
-        return Follower.all().filter('follower', im_from)
+        return Follower2.all().filter('follower', im_from)
 
     def mute_command(self, message=None):
         """mute\n stop questions notifications"""
@@ -181,9 +184,8 @@ class XmppHandler(xmpp_handlers.CommandHandler):
         
     def unfollow_command(self, message=None):
         """unfollow <tag>,<question id>...\nstop notifications for specific tags or question ids\nPassing *, all or everything will make you unfollow everything.""" 
-        im_from = db.IM("xmpp", get_bare_jid(message.sender))
+        follower_id = self._get_current_follower(message)
 
-        key_names = []
         tags = XmppHandler._get_tags(message.arg)
         logging.debug(tags)
 
@@ -191,47 +193,23 @@ class XmppHandler(xmpp_handlers.CommandHandler):
         followers = []
 
         if len(tags) == 1 and tags[0].lower() in ('*', 'all', 'everything'):
-            question_query = QuestionFollower.all().filter('follower', im_from)
-            follower_query = Follower.all().filter('follower', im_from)
-
-            for follower in question_query:
-                followers.append(follower)
-                items.append(str(follower.question.question_id));
-
-            for follower in follower_query:
-                followers.append(follower)
-                items.append(follower.tag.name);
-                
-            delete_following_ids(im_from)
-        else:
-            for tag in tags:
-                key_names.append(tag_to_key_name(tag))
-
-            db_tags = Tag.get_by_key_name(key_names)
-
-            logging.debug(db_tags)
-
-            for db_tag in db_tags:
-                if not db_tag:
-                    continue
-
-                follower_query = Follower.all().filter('follower', im_from).filter('tag', db_tag.key())
-                for follower in follower_query:
-                    followers.append(follower)
-                    items.append(follower.tag.name)
-
-            follower_query = QuestionFollower.all().filter('follower', im_from).fetch(globals.max_follow_tags)
-
-            for follower in follower_query:
-                # TODO: prefetch question
-                if str(follower.question.question_id) in key_names:
-                    followers.append(follower)
-                    items.append(str(follower.question.question_id))                    
-                    delete_following_ids(im_from)
+            followers_tags = list(unfollow_tags_all(follower_id))
+            followers_questions = list(unfollow_questions_all(follower_id))
+        else:            
+            default_domain = globals.default_domain if not follower_id.domain else follower_id.domain
+            
+            followers_tags = list(unfollow_tags(follower_id, {default_domain: tags}))
+            followers_questions = list(unfollow_questions(follower_id, {default_domain: tags}))
+            
+        followers += followers_tags
+        followers += followers_questions
+        
+        items += [follower.tag.name for follower in followers_tags]                         
+        items += [str(follower.question_id) for follower in followers_questions]
                     
-        if len(followers) > 0:
+        if len(followers) > 0:                        
             msg = "you are no longer following: %s" % (",".join(items),)
-            db.delete(followers)
+            db.delete(followers)            
         else:
             msg = "you are not following %s" % message.arg
 
@@ -241,30 +219,28 @@ class XmppHandler(xmpp_handlers.CommandHandler):
         return domain
 
     def following_command(self, message=None): 
-        im_from = db.IM("xmpp", get_bare_jid(message.sender))
         follower_id = self._get_current_follower(message)
-        query = Follower.gql('where follower=:1', im_from)
-        tags = []
+        items = []
 
-        default_domain = globals.default_domain if not follower_id.domain else follower_id.domain
+        default_domain = globals.default_domain if not follower_id.domain else follower_id.domain        
                 
-        for follower in query:
-            tag = key_name_to_tag(follower.tag.key().name())
-            if follower.domain == default_domain: 
-                tags.append(tag)
-            else:
-                tags.append("%s on %s" % (tag, self._nice_domain_name(follower.domain)))
+        for domain, tags in following_tags(follower_id.user).iteritems():
+            for tag in tags:
+                if domain == default_domain: 
+                    items.append(tag)
+                else:
+                    items.append("%s on %s" % (tag, self._nice_domain_name(domain)))
                 
-        query = QuestionFollower.all().filter('follower', im_from)
-        for follower in query:
-            tag = str(follower.question.question_id)
-            if follower.question.domain == default_domain: 
-                tags.append(tag)
-            else:
-                tags.append("%s on %s" % (tag, self._nice_domain_name(follower.question.domain)))
+        for domain, question_ids in following_ids(follower_id.user).iteritems():
+            for question_id in question_ids:
+                question_id = str(question_id)
+                if domain == default_domain: 
+                    items.append(question_id)
+                else:
+                    items.append("%s on %s" % (question_id, self._nice_domain_name(domain)))
                  
-        if len(tags) > 0:
-            msg = "you are following: %s" % (",".join(tags),)     
+        if len(items) > 0:
+            msg = "you are following: %s" % (",".join(items),)     
         else:
             msg = "you are not following any topic"
             
@@ -335,7 +311,9 @@ class XmppHandler(xmpp_handlers.CommandHandler):
                 msg = "Invalid question id %s" % (",".join([str(id) for id in e.invalid_ids]),)
             else:
                 msg = "Invalid question ids %s" % (",".join([str(id) for id in e.invalid_ids]),)                                    
-        except TooManyQuestions:
+        except InvalidTag, e:
+            msg = "Invalid tag %s, wildcard tags can only have * at the beginning and\or the end and must have at least two non * letters." % (e.tag)        
+        except TooManyTags:
             msg = "you follow too much questions, please /unfollow some."        
 
         message.reply(msg)                
@@ -387,10 +365,10 @@ class XmppHandler(xmpp_handlers.CommandHandler):
     
     def domain_command(self, message=None):
         """domain <domain or alias> Set the active domain on which the bot commands will work."""
-        follower = self._get_current_follower(message)
+        follower_id = self._get_current_follower(message)
                 
         if len(message.arg) == 0:
-            domain = globals.default_domain if not follower.domain else follower.domain
+            domain = globals.default_domain if not follower_id.domain else follower_id.domain
             msg = "Your default domain is %s" % (domain,)
             message.reply(msg)
             return
@@ -403,8 +381,8 @@ class XmppHandler(xmpp_handlers.CommandHandler):
         if not api:
             msg = "Invalid domain"
         else:
-            follower.domain = full_domain_name
-            follower.put() 
+            follower_id.domain = full_domain_name
+            follower_id.put() 
             msg = "Your new default domain is now %s" % (full_domain_name,)
             
         message.reply(msg)

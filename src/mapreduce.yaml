@@ -13,3 +13,12 @@ mapreduce:
     params:
     - name: entity_kind
       default: entities.Follower      
+      
+      
+- name: Create Follower2
+  mapper:
+    input_reader: mapreduce.input_readers.DatastoreInputReader
+    handler: tasks.new_db.create_follower2
+    params:
+    - name: entity_kind
+      default: entities.Follower            
