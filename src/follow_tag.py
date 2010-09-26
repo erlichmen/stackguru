@@ -19,7 +19,7 @@ def following_tags(user):
     ids = memcache.get(user.address, namespace="users_tags")
     if not ids:
         tag_following_query = Follower2.gql('where follower=:1', user).fetch(globals.max_follow_tags)
-        items = [(tag_follow.domain, Follower2.tag_with_wildcard(tag_follow.tag_name, tag_follow.matcher)) for tag_follow in tag_following_query]
+        items = [(tag_follow.domain, tag_follow.full_tag) for tag_follow in tag_following_query]
 
         ids = {}
         for domain, tag_name in items:

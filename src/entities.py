@@ -73,8 +73,9 @@ class Follower2(db.Model):
         key_name = Follower2.build_key_name(follower_id.user, tag_name, domain)
                     
         def txn(*args, **kwds):
+            logging.info("creating follow tag %s" % (key_name, ))
             entity = Follower2.get_by_key_name(key_name)
-            if entity is None:
+            if not entity:
                 entity = Follower2(key_name=key_name, **kwds)
             else:
                 entity.matcher = kwds.get('matcher')
@@ -100,6 +101,10 @@ class Follower2(db.Model):
         for tag in tags:
             Follower2.create(follower_id, domain, tag)
         
+    @property
+    def full_tag(self):
+        return Follower2.tag_with_wildcard(self.tag_name, self.matcher)
+   
     @staticmethod
     def tag_with_wildcard(tag, matcher):
         if matcher == 0: #is

@@ -11,9 +11,8 @@ from entities import InvalidTag, FollowerId, Follower2
 from gen_utils import *
 from publisher import question_url
 from datetime import datetime
-from follow_question import follow_questions, unfollow_questions, unfollow_questions_all, TooManyQuestions, InvalidQuestions, following_ids
-from follow_tag import follow_tags, unfollow_tags, unfollow_tags_all, following_tags, TooManyTags
-
+import follow_question
+import follow_tag
 from chrome import ShortUrls
             
 def get_bare_jid(im_addr):
@@ -193,18 +192,18 @@ class XmppHandler(xmpp_handlers.CommandHandler):
         followers = []
 
         if len(tags) == 1 and tags[0].lower() in ('*', 'all', 'everything'):
-            followers_tags = list(unfollow_tags_all(follower_id))
-            followers_questions = list(unfollow_questions_all(follower_id))
+            followers_tags = list(follow_tag.unfollow_tags_all(follower_id))
+            followers_questions = list(follow_question.unfollow_questions_all(follower_id))
         else:            
             default_domain = globals.default_domain if not follower_id.domain else follower_id.domain
             
-            followers_tags = list(unfollow_tags(follower_id, {default_domain: tags}))
-            followers_questions = list(unfollow_questions(follower_id, {default_domain: tags}))
+            followers_tags = list(follow_tag.unfollow_tags(follower_id, {default_domain: tags}))
+            followers_questions = list(follow_question.unfollow_questions(follower_id, {default_domain: tags}))
             
         followers += followers_tags
         followers += followers_questions
         
-        items += [follower.tag.name for follower in followers_tags]                         
+        items += [follower.full_tag for follower in followers_tags]                         
         items += [str(follower.question_id) for follower in followers_questions]
                     
         if len(followers) > 0:                        
@@ -224,14 +223,14 @@ class XmppHandler(xmpp_handlers.CommandHandler):
 
         default_domain = globals.default_domain if not follower_id.domain else follower_id.domain        
                 
-        for domain, tags in following_tags(follower_id.user).iteritems():
+        for domain, tags in follow_tag.following_tags(follower_id.user).iteritems():
             for tag in tags:
                 if domain == default_domain: 
                     items.append(tag)
                 else:
                     items.append("%s on %s" % (tag, self._nice_domain_name(domain)))
                 
-        for domain, question_ids in following_ids(follower_id.user).iteritems():
+        for domain, question_ids in follow_question.following_ids(follower_id.user).iteritems():
             for question_id in question_ids:
                 question_id = str(question_id)
                 if domain == default_domain: 
@@ -279,15 +278,15 @@ class XmppHandler(xmpp_handlers.CommandHandler):
 
         if len(actual_tags) > 0:
             try:
-                follow_tags(follower_id, actual_tags)
-                
-                if len(actual_tags) > 1:
-                    msg = "OK! I will let you know once a question on those topics is asked"
-                    message.reply(msg)
-                elif len(actual_tags) == 1:
-                    msg = "OK! I will let you know once a question on this topic is asked"            
-                    message.reply(msg)
-            except TooManyQuestions:
+                msg = ""
+                for domain, tags in follow_tag.follow_tags(follower_id, actual_tags):
+                    msg += 'You are now following: "%s" on %s\n' % (",".join(tags), domain,)
+
+                message.reply(msg)
+            except InvalidTag, e:
+                msg = "Invalid tag %s, wildcard tags can only have * at the beginning and\or the end and must have at least two non * letters." % (e.tag)
+                message.reply(msg)                            
+            except follow_tag.TooManyTags:
                 msg = "you follow too much tags, please /unfollow some."        
                 message.reply(msg)
                 return                
@@ -300,20 +299,18 @@ class XmppHandler(xmpp_handlers.CommandHandler):
         try:
             default_domain = globals.default_domain if not follower_id.domain else follower_id.domain
             
-            for domain, questions in follow_questions(follower_id, question_tags):
+            for domain, questions in follow_question.follow_questions(follower_id, question_tags):
                 for question in questions:
                     if default_domain == domain:
                         msg += 'You are now following: "%s"\n' % (question['title'],) 
                     else:
                         msg += 'You are now following: "%s" on %s\n' % (question['title'],domain,)            
-        except InvalidQuestions, e:
+        except follow_question.InvalidQuestions, e:
             if len(e.invalid_ids) == 1: 
                 msg = "Invalid question id %s" % (",".join([str(id) for id in e.invalid_ids]),)
             else:
                 msg = "Invalid question ids %s" % (",".join([str(id) for id in e.invalid_ids]),)                                    
-        except InvalidTag, e:
-            msg = "Invalid tag %s, wildcard tags can only have * at the beginning and\or the end and must have at least two non * letters." % (e.tag)        
-        except TooManyTags:
+        except follow_question.TooManyQuestions:
             msg = "you follow too much questions, please /unfollow some."        
 
         message.reply(msg)                
