@@ -61,6 +61,9 @@ class ChromeHandler(webapp.RequestHandler):
 				zip = ZipFile(zip_data, "w", ZIP_DEFLATED)
 		
 				zip.write(os.path.join(path, "icon48.png"), "icon48.png")
+				zip.write(os.path.join(path, "icon16.png"), "icon16.png")
+				zip.write(os.path.join(path, "icon128.png"), "icon128.png")
+				zip.write(os.path.join(path, "icon32.png"), "icon32.png")
 				zip.write(os.path.join(path, "jquery.min.js"), "jquery.min.js")
 		
 				zip.writestr("followLink.js", generate_followLink())				

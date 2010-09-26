@@ -20,7 +20,7 @@ stack_api_key = PUT-YOU-STACK-APPS-KEY-HERE
 max_follow_tags = 10
 
 #Chrome extension
-chrome_extension_version = "0.3.4"
+chrome_extension_version = "0.3.5"
 
 if USING_SDK:
     debug_mode = True

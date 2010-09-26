@@ -51,6 +51,10 @@ handlers:
 - url: /_wave/robot/profile
   static_files: static/wave/profile.txt  
   upload: static/wave/profile.txt  
+  
+- url: /stats.*
+  script: $PYTHON_LIB/google/appengine/ext/appstats/ui.py
+   
 - url: /.*
   script: main.py
   
