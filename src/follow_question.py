@@ -150,8 +150,6 @@ class FollowQuestionHandler(QuestionHandler):
         
         domain = self.get_domain(follower_id)
         
-        domain = self.get_domain(follower_id)
-        
         if len(question_id) == 0:
             ids = following_ids(follower_id.user)
             result["ids"] = ids[domain] if domain in ids else []

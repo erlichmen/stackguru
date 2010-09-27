@@ -35,7 +35,8 @@ class ShortUrls:
             
     @staticmethod
     def set_url(token, url):
-        url = memcache.set(token, url, time=60*10, namespace="shorturls")
+        #The url will expire after X min
+        url = memcache.set(token, url, time=globals.short_url_lifespan, namespace="shorturls")
         if url is not None:
             return url
         
