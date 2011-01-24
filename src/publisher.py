@@ -34,25 +34,26 @@ class Publisher:
             return set_tags
         
         def gae_get_followers():
-            index = 0
-            
-            while True:
-                followrs = Follower2.gql("where domain=:1 and mute!=TRUE", domain).fetch(1000, index)
-
+            cursor = None
+            while True:                
+                q = Follower2.gql("where domain=:1 and mute!=TRUE", domain).with_cursor(cursor)
+                    
                 l = 0
-                for followr in followrs:
+                for followr in q.fetch(1000):
                     l += 1
                     yield followr
                     
                 if l < 1000:
                     break
                 
-                index += 1000        
+                cursor = q.cursor
         
-        def gae_publish(domain, tag_name, subscribers, question_id, title):
-            msg = "%s: %s" % (tag_name, question_url(domain, question_id, title))
-            logging.debug("sending %s to %d followers" % (question_id, len(subscribers)))            
-            send_message(subscribers, msg)
+        
+        def gae_publish(domain, tag_name, subscribers, question_id, title):            
+            if len(subscribers) > 0:
+                logging.debug("sending %s to %d followers" % (question_id, len(subscribers)))
+                msg = "%s: %s" % (tag_name, question_url(domain, question_id, title))
+                send_message(subscribers, msg)
         
         def on_match(which, pos):
             full_tag = tag_names[text_lookup[pos]]

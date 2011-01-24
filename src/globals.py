@@ -30,3 +30,4 @@ else:
 ranks_page_size = 10
 ranks_limit = 10000
 short_url_lifespan = 10*60
+question_batch_size = 25

@@ -1,4 +1,4 @@
-from google.appengine.api.labs.taskqueue import Task
+from google.appengine.api.taskqueue import Task
 from datetime import datetime
 import logging
 from google.appengine.ext import db
@@ -12,6 +12,7 @@ from google.appengine.api.xmpp import send_message
 import bitly
 import globals
 from publisher import safe_title
+from gen_utils import chunks
 
 class AnswerTask(Task):
     @staticmethod
@@ -134,7 +135,6 @@ class ScanNewAnswers(webapp.RequestHandler):
         page = 1 if not self.request.get('page') else self.request.get('page') 
         self._scan(domain, ids, page)
 
-
 class ScanNewComments(webapp.RequestHandler):
     @staticmethod
     def _comment_url(domain, comment, with_hash = True):
@@ -232,33 +232,14 @@ class ScanNewComments(webapp.RequestHandler):
                 
 class TaskNewComments(webapp.RequestHandler):
     def _scan(self):
-        questions = Question.all().order('domain')
+        domain_ids = {}
+        for question in Question.all().order('domain'):
+            domain_ids.setdefault(question.domain, []).append(str(question.question_id))
         
-        index = 0
-        
-        while True:
-            questions_query = questions.fetch(10, index) 
-            
-            if not questions_query:
-                break
-            
-            questions_list = list(questions_query)
-            
-            if len(questions_list) == 0:
-                break
-
-            domain_ids = {}
-            for question in questions_list:
-                if not question.domain in domain_ids:
-                    domain_ids[question.domain] = []
-                
-                domain_ids[question.domain].append(str(question.question_id))
-            
-            for domain in domain_ids:            
-                AnswerTask.create_and_queue(domain, domain_ids[domain])
-                CommentTask.create_and_queue(domain, domain_ids[domain])
-            
-            index += 10
+        for domain in domain_ids:            
+            for chunk in chunks(domain_ids[domain], globals.question_batch_size):                
+                AnswerTask.create_and_queue(domain, chunk)
+                CommentTask.create_and_queue(domain, chunk)
                         
     def get(self):
         self._scan()

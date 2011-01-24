@@ -1,17 +1,17 @@
 K 25
 svn:wc:ra_dav:version-url
-V 57
-/svn/!svn/ver/97/trunk/python/src/mapreduce/lib/blobstore
+V 58
+/svn/!svn/ver/113/trunk/python/src/mapreduce/lib/blobstore
 END
 blobstore.py
 K 25
 svn:wc:ra_dav:version-url
-V 70
-/svn/!svn/ver/97/trunk/python/src/mapreduce/lib/blobstore/blobstore.py
+V 71
+/svn/!svn/ver/113/trunk/python/src/mapreduce/lib/blobstore/blobstore.py
 END
 __init__.py
 K 25
 svn:wc:ra_dav:version-url
-V 68
-/svn/!svn/ver/6/trunk/python/src/mapreduce/lib/blobstore/__init__.py
+V 70
+/svn/!svn/ver/113/trunk/python/src/mapreduce/lib/blobstore/__init__.py
 END

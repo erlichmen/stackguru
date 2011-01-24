@@ -57,3 +57,10 @@ class FollowHandler(webapp.RequestHandler):
             memcache.set(token, follower_id, namespace="tokens")
 
         return follower_id
+    
+    
+def chunks(l, n):
+    """ Yield successive n-sized chunks from l.
+    """
+    for i in xrange(0, len(l), n):
+        yield l[i:i+n]    

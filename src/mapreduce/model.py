@@ -414,7 +414,7 @@ class MapreduceSpec(JsonMixin):
                name,
                mapreduce_id,
                mapper_spec,
-               params = {},
+               params={},
                hooks_class_name=None):
     """Create new MapreduceSpec.
 
@@ -450,7 +450,7 @@ class MapreduceSpec(JsonMixin):
       if not issubclass(hooks_class, hooks.Hooks):
         raise ValueError(
             "hooks_class_name must refer to a hooks.Hooks subclass")
-      self.__hooks = hooks_class()
+      self.__hooks = hooks_class(self.mapper)
 
     return self.__hooks
 
@@ -530,6 +530,11 @@ class MapreduceState(db.Model):
   start_time = db.DateTimeProperty(auto_now_add=True)
 
   @classmethod
+  def kind(cls):
+    """Returns entity kind."""
+    return "_AE_MR_MapreduceState"
+
+  @classmethod
   def get_key_by_job_id(cls, mapreduce_id):
     """Retrieves the Key for a Job.
 
@@ -579,18 +584,25 @@ class MapreduceState(db.Model):
   processed = property(get_processed)
 
   @staticmethod
-  def create_new(getkeyname=_get_descending_key,
+  def create_new(mapreduce_id=None,
                  gettime=datetime.datetime.now):
     """Create a new MapreduceState.
 
     Args:
-      getkeyname: Used for testing.
+      mapreduce_id: Mapreduce id as string.
       gettime: Used for testing.
     """
-    state = MapreduceState(key_name=getkeyname(),
+    if not mapreduce_id:
+      mapreduce_id = MapreduceState.new_mapreduce_id()
+    state = MapreduceState(key_name=mapreduce_id,
                            last_poll_time=gettime())
     state.set_processed_counts([])
     return state
+
+  @staticmethod
+  def new_mapreduce_id():
+    """Generate new mapreduce id."""
+    return _get_descending_key()
 
 
 class ShardState(db.Model):
@@ -640,6 +652,11 @@ class ShardState(db.Model):
     return self.key().name()
 
   shard_id = property(get_shard_id)
+
+  @classmethod
+  def kind(cls):
+    """Returns entity kind."""
+    return "_AE_MR_ShardState"
 
   @classmethod
   def shard_id_from_number(cls, mapreduce_id, shard_number):
@@ -722,6 +739,11 @@ class MapreduceControl(db.Model):
   _KEY_NAME = "command"
 
   command = db.TextProperty(choices=_COMMANDS, required=True)
+
+  @classmethod
+  def kind(cls):
+    """Returns entity kind."""
+    return "_AE_MR_MapreduceControl"
 
   @classmethod
   def get_key_by_job_id(cls, mapreduce_id):

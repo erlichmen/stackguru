@@ -12,6 +12,18 @@ class TooManyTags(Exception):
     pass
 
 
+def get_followers(domain):
+    followers = memcache.get(domain, namespace="followers")
+    
+    if not followers:
+        q = Follower2.gql("where domain=:1 and mute!=TRUE", domain)
+                
+        followers = q.fetch()
+                
+        memcache.set(domain, followers, namespace="followers")
+
+    return followers
+
 def delete_following_tags(user):
     memcache.delete(user.address, namespace="users_tags")
 
