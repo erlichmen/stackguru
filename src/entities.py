@@ -2,6 +2,8 @@ from google.appengine.ext import db
 import logging
 import StackOverflow
 
+allowed_short_tags = set(['c'])
+
 class FollowerId(db.Model):
     user = db.IMProperty(required=True)    
     snooze = db.IMProperty(required=False)
@@ -123,7 +125,7 @@ class Follower2(db.Model):
         if tag.find('*', 1, -1) > 0: 
             return False
     
-        if len(tag.strip('*')) < 2:
+        if len(tag.strip('*')) < 2 and tag not in allowed_short_tags:            
             return False
     
         return True
