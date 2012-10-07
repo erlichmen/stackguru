@@ -183,12 +183,12 @@ class Question(db.Model):
     title = db.StringProperty(required=False)
     
     @staticmethod
-    def build_keyname(domain, id):
-        return "%s_%s" %( id, domain, )
+    def build_keyname(domain, question_id):
+        return "%s_%s" %( question_id, domain, )
     
     @staticmethod
     def get_by_ids_domain(domain, ids):
-        key_names = map(lambda id: Question.build_keyname(domain, id), ids) 
+        key_names = map(lambda question_id: Question.build_keyname(domain, question_id), ids) 
         logging.debug("searching question with key names %s" % (key_names,))
         return Question.get_by_key_name(key_names)
     

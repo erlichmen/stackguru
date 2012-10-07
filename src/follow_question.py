@@ -1,8 +1,7 @@
-import globals
+import guru_globals
 from google.appengine.api import memcache
-from google.appengine.ext import webapp
+import webapp2 
 from google.appengine.ext import db
-from google.appengine.ext.webapp.util import run_wsgi_app
 import logging
 from datetime import datetime, timedelta
 from entities import Question, QuestionFollower
@@ -19,27 +18,27 @@ class InvalidQuestions(Exception):
         return repr(self.invalid_ids)
 
 def delete_following_ids(user):
-    memcache.delete(user.address, namespace="users")
+    memcache.delete(user.address, namespace="users") #@UndefinedVariable
     
 def following_ids(user):
-    ids = memcache.get(user.address, namespace="users")
+    ids = memcache.get(user.address, namespace="users") #@UndefinedVariable
     if not ids:
-        following_question_query = QuestionFollower.gql('where follower=:1', user).fetch(globals.max_follow_tags)
+        following_question_query = QuestionFollower.gql('where follower=:1', user).fetch(guru_globals.max_follow_tags)
         items = [(qf.domain, qf.question_id) for qf in following_question_query]
 
         ids = {}
-        for domain, id in items:
+        for domain, question_id in items:
             if not domain in ids:
                 ids[domain] = []
                 
-            ids[domain] += [id]
+            ids[domain] += [question_id]
             
-        memcache.set(user.address, ids, namespace="users")
+        memcache.set(user.address, ids, namespace="users") #@UndefinedVariable
     
     return ids
 
 def unfollow_questions_all(follower_id):
-    follower_query = QuestionFollower.all().filter('follower', follower_id.user).fetch(globals.max_follow_tags)
+    follower_query = QuestionFollower.all().filter('follower', follower_id.user).fetch(guru_globals.max_follow_tags)
     
     delete_following_ids(follower_id.user)
     
@@ -47,7 +46,7 @@ def unfollow_questions_all(follower_id):
         yield follower
 
 def unfollow_questions(follower_id, question_ids_per_site):
-    follower_query = QuestionFollower.all().filter('follower', follower_id.user).fetch(globals.max_follow_tags)
+    follower_query = QuestionFollower.all().filter('follower', follower_id.user).fetch(guru_globals.max_follow_tags)
     
     delete_following_ids(follower_id.user)
     
@@ -66,7 +65,7 @@ def unfollow_questions(follower_id, question_ids_per_site):
 def follow_questions(follower_id, question_ids_per_site):                                
     ids = following_ids(follower_id.user)
     count = sum_dict(ids) + sum_dict(question_ids_per_site)
-    if (count >= globals.max_follow_tags):
+    if (count >= guru_globals.max_follow_tags):
         raise TooManyQuestions
 
     delete_following_ids(follower_id.user)
@@ -87,7 +86,7 @@ def follow_questions(follower_id, question_ids_per_site):
         if len(left_question_set) > 0:
             raise InvalidQuestions(left_question_set)
         
-        end_time = datetime.now() + timedelta(days=1)
+        end_time = datetime.now() + timedelta(days=guru_globals.default_question_scan_lifespan_days)
         for question in questions:
             question_id = question['question_id']
             title = question['title']
@@ -168,7 +167,7 @@ class FollowQuestionHandler(QuestionHandler):
                 msg = "Invalid domain %s" % (e.domain)
                 result["status"] = "error"
             except InvalidQuestions, e:
-                msg = "Invalid question id %s" % (",".join([str(id) for id in e.invalid_ids]),)
+                msg = "Invalid question id %s" % (",".join([str(question_id) for question_id in e.invalid_ids]),)
                 result["status"] = "error"
             except TooManyQuestions:
                 msg = "you follow too much questions, please unfollow some."        
@@ -178,10 +177,6 @@ class FollowQuestionHandler(QuestionHandler):
                         
         self.handle_result(result)
         
-application = webapp.WSGIApplication([("/follow/(.*)", FollowQuestionHandler), ("/unfollow/(.*)", UnfollowQuestionHandler)], debug=globals.debug_mode)
-
-def main():
-    run_wsgi_app(application)
-
-if __name__ == "__main__":
-    main()
+app = webapp2.WSGIApplication([("/follow/(.*)", FollowQuestionHandler), 
+                              ("/unfollow/(.*)", UnfollowQuestionHandler)], 
+                             debug=guru_globals.debug_mode)

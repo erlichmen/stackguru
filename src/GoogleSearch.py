@@ -1,13 +1,13 @@
-import globals
+import guru_globals
 from google.appengine.api import urlfetch
 import logging
-import simplejson as json
+import json
 import urllib
 
 class GoogleSearch:
     def search(self, q):
         q = urllib.quote(q)
-        url = ('http://ajax.googleapis.com/ajax/services/search/web?v=1.0&q=%s&key=%s&cx=001464108856017723352:kdxkhliydge' % (q, globals.google_api_key))
+        url = ('http://ajax.googleapis.com/ajax/services/search/web?v=1.0&q=%s&key=%s&cx=001464108856017723352:kdxkhliydge' % (q, guru_globals.google_api_key))
         
         logging.debug(url)
         

@@ -1,16 +1,15 @@
+import webapp2
 from google.appengine.api.taskqueue import Task
+from google.appengine.ext.webapp.util import run_wsgi_app
+from google.appengine.api.xmpp import send_message
+from google.appengine.ext import db
 from datetime import datetime
 import logging
-from google.appengine.ext import db
 import StackOverflow 
 from entities import Question
 from BeautifulSoup import BeautifulSoup
 from markdown import markdown
-from google.appengine.ext import webapp
-from google.appengine.ext.webapp.util import run_wsgi_app
-from google.appengine.api.xmpp import send_message
-import bitly
-import globals
+import bitly,guru_globals
 from publisher import safe_title
 from gen_utils import chunks
 
@@ -29,7 +28,7 @@ class CommentTask(Task):
         comments_task = Task(url='/comments/%s' % (domain,), params=params)            
         comments_task.add(queue_name="comments")
 
-class ScanNewAnswers(webapp.RequestHandler):
+class ScanNewAnswers(webapp2.RequestHandler):
     @staticmethod
     def _answer_url(domain, answer, with_hash = True):
         question = answer['question']
@@ -46,7 +45,7 @@ class ScanNewAnswers(webapp.RequestHandler):
             urls[answer['answer_id']] = ScanNewAnswers._answer_url(domain, answer) 
         
         if len(urls) > 0:
-            a = bitly.Api(login = globals.bitly_login, apikey = globals.bitly_api_key)
+            a = bitly.Api(login = guru_globals.bitly_login, apikey = guru_globals.bitly_api_key)
             short_urls = a.shorten(urls.values())                
             return dict(zip(urls.keys(), short_urls))
         
@@ -94,7 +93,7 @@ class ScanNewAnswers(webapp.RequestHandler):
         if total > page * pagesize:
             AnswerTask.create_and_queue(ids, page+1)
                     
-        question_ids = map(lambda id: int(id), ids)
+        question_ids = map(lambda question_id: int(question_id), ids)
         values = list(Question.get_by_ids_domain(domain, ids))
         questions = dict(zip(question_ids, values)) 
         questions_update_time = {}
@@ -135,7 +134,7 @@ class ScanNewAnswers(webapp.RequestHandler):
         page = 1 if not self.request.get('page') else self.request.get('page') 
         self._scan(domain, ids, page)
 
-class ScanNewComments(webapp.RequestHandler):
+class ScanNewComments(webapp2.RequestHandler):
     @staticmethod
     def _comment_url(domain, comment, with_hash = True):
         if with_hash:
@@ -151,7 +150,7 @@ class ScanNewComments(webapp.RequestHandler):
                 urls[comment['comment_id']] = url
         
         if len(urls.values()) > 0:
-            a = bitly.Api(login = globals.bitly_login, apikey = globals.bitly_api_key)
+            a = bitly.Api(login = guru_globals.bitly_login, apikey = guru_globals.bitly_api_key)
             short_urls = a.shorten(urls.values())                
             return dict(zip(urls.keys(), short_urls))
         
@@ -230,14 +229,14 @@ class ScanNewComments(webapp.RequestHandler):
         page = 1 if not self.request.get('page') else self.request.get('page') 
         self._scan(domain, ids, page)
                 
-class TaskNewComments(webapp.RequestHandler):
+class TaskNewComments(webapp2.RequestHandler):
     def _scan(self):
         domain_ids = {}
         for question in Question.all().order('domain'):
             domain_ids.setdefault(question.domain, []).append(str(question.question_id))
         
         for domain in domain_ids:            
-            for chunk in chunks(domain_ids[domain], globals.question_batch_size):                
+            for chunk in chunks(domain_ids[domain], guru_globals.question_batch_size):                
                 AnswerTask.create_and_queue(domain, chunk)
                 CommentTask.create_and_queue(domain, chunk)
                         
@@ -247,14 +246,8 @@ class TaskNewComments(webapp.RequestHandler):
     def post(self, domain):
         self._scan()
                 
-application = webapp.WSGIApplication(
-                                     [('/tasks/scan_new_comments/', TaskNewComments), 
-                                      ('/comments/(.*)', ScanNewComments), 
-                                      ('/answers/(.*)', ScanNewAnswers)], 
-                                      debug = globals.debug_mode)
-
-def main():
-    run_wsgi_app(application)
-
-if __name__ == "__main__":
-    main()        
+app = webapp2.WSGIApplication([
+                               ('/tasks/scan_new_comments', TaskNewComments), 
+                               ('/comments/(.*)', ScanNewComments), 
+                               ('/answers/(.*)', ScanNewAnswers)], 
+                               debug = guru_globals.debug_mode)

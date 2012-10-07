@@ -1,7 +1,6 @@
-import os, globals, logging
-from google.appengine.ext import webapp
+import os, guru_globals, logging
+import webapp2 
 from google.appengine.ext.webapp import template
-from google.appengine.ext.webapp.util import run_wsgi_app
 from google.appengine.ext.db import GqlQuery
 from array import array
 from StringIO import StringIO
@@ -12,12 +11,12 @@ import cgi
 from short_urls import ShortUrls
 from rsa_key import RSAKey
 	
-class ChromeHandler(webapp.RequestHandler):
+class ChromeHandler(webapp2.RequestHandler):
 	def get(self, user_secret):		
 		def generate_update_xml(appid, codebase):
 			path = os.path.join(os.path.dirname(__file__), './static/chrome/update.xml')
 			template_values = { 
-								'version': globals.chrome_extension_version, 
+								'version': guru_globals.chrome_extension_version, 
 								'url': codebase,
 								'appid': appid
 								}
@@ -37,7 +36,7 @@ class ChromeHandler(webapp.RequestHandler):
 					naked_domain += '/'
 					
 				template_values = { 
-									'version': globals.chrome_extension_version, 
+									'version': guru_globals.chrome_extension_version, 
 									'update_url': self.request.url,
 									'base_url': naked_domain 
 									}
@@ -131,10 +130,4 @@ class ChromeHandler(webapp.RequestHandler):
 			
 		self.response.out.write(zip);
 		
-application = webapp.WSGIApplication([("/chrome/(.*)", ChromeHandler)], debug=globals.debug_mode)
-
-def main():
-	run_wsgi_app(application)
-
-if __name__ == "__main__":
-	main()
+app = webapp2.WSGIApplication([("/chrome/(.*)", ChromeHandler)], debug=guru_globals.debug_mode)

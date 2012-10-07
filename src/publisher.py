@@ -1,7 +1,7 @@
 import logging
-from google.appengine.api.xmpp import send_message
 from entities import Follower2
 from algorithms.ahocorasick import AhoCorasick
+from xmpp_handler import send_message_to_subscribers 
 from time import clock
 
 def safe_title(title):
@@ -53,7 +53,7 @@ class Publisher:
             if len(subscribers) > 0:
                 logging.debug("sending %s to %d followers" % (question_id, len(subscribers)))
                 msg = "%s: %s" % (tag_name, question_url(domain, question_id, title))
-                send_message(subscribers, msg)
+                send_message_to_subscribers(subscribers, msg)
         
         def on_match(which, pos):
             full_tag = tag_names[text_lookup[pos]]

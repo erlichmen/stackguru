@@ -1,8 +1,8 @@
 from google.appengine.ext.db import GqlQuery
-from google.appengine.ext import webapp
+import webapp2
 from google.appengine.api import memcache
-import simplejson as json;
-import StackOverflow
+import json
+import StackOverflow, guru_globals
 
 def tag_to_key_name(tag):
     return tag.replace("*", "__WC__")
@@ -19,7 +19,7 @@ class InvalidDomain(Exception):
     def __str__(self):
         return repr(self.domain)
 
-class FollowHandler(webapp.RequestHandler):
+class FollowHandler(webapp2.RequestHandler):
     def handle_result(self, result):
         if not result:
             return
@@ -32,7 +32,7 @@ class FollowHandler(webapp.RequestHandler):
     
     def get_domain(self, follower_id):
         domain = self.request.GET["domain"] if "domain" in self.request.GET else follower_id.default_domain
-        domain = globals.default_domain if not domain else domain
+        domain = guru_globals.default_domain if not domain else domain
         return StackOverflow.Api.full_domain_name(domain)
         
     def get_follower_id(self):

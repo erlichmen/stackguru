@@ -1,6 +1,5 @@
-import globals
-from google.appengine.ext import webapp
-from google.appengine.ext.webapp.util import run_wsgi_app
+import guru_globals
+import webapp2 
 from google.appengine.api import memcache
 import random, string
 
@@ -36,11 +35,11 @@ class ShortUrls:
     @staticmethod
     def set_url(token, url):
         #The url will expire after X min
-        url = memcache.set(token, url, time=globals.short_url_lifespan, namespace="shorturls")
+        url = memcache.set(token, url, time=guru_globals.short_url_lifespan, namespace="shorturls")
         if url is not None:
             return url
         
-class ShortUrlChromeHandler(webapp.RequestHandler):
+class ShortUrlChromeHandler(webapp2.RequestHandler):
     def get(self, email):
         url = ShortUrls.get_url(email)
         if not url:
@@ -50,11 +49,4 @@ class ShortUrlChromeHandler(webapp.RequestHandler):
         
         self.redirect(url)
 
-application = webapp.WSGIApplication([("/c/(.*)", ShortUrlChromeHandler)], debug=globals.debug_mode)
-
-def main():
-    run_wsgi_app(application)
-
-if __name__ == "__main__":
-    main()
-        
+app = webapp2.WSGIApplication([("/c/(.*)", ShortUrlChromeHandler)], debug=guru_globals.debug_mode)

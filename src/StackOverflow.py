@@ -1,7 +1,7 @@
 from google.appengine.api import urlfetch
 import logging
-import simplejson as json
-import globals
+import json
+import guru_globals
 import urllib
 from google.appengine.api import memcache
 
@@ -26,9 +26,9 @@ domain_alias = {
                 }
         
 class Api:    
-    def __init__(self, domain = globals.default_domain):
-        self.api_version = 1.0
-        self.appkey = globals.stack_api_key
+    def __init__(self, domain = guru_globals.default_domain):
+        self.api_version = 2.1
+        self.appkey = guru_globals.stack_api_key
         self.domain = domain
 
     @staticmethod
@@ -100,13 +100,10 @@ class Api:
     def _csv_ids(ids):
         return "%3B".join(map(lambda id: str(id), ids))
         
-    def get_domain(self):
-        return 'api.' + self.domain
-    
     def _fetch(self, command, params = {}, raw_result=False):        
         params_str = "".join(map(lambda p: "&%s=%s" % p, params.iteritems()))
         
-        url = "http://%s/%s/%s?key=%s%s" % (self.get_domain(), self.api_version, command, self.appkey, params_str)            
+        url = "http://api.stackexchange.com/%s/%s?key=%s%s&site=%s" % (self.api_version, command, self.appkey, params_str, self.domain)            
         logging.debug(url)
         respose = urlfetch.fetch(url=url, deadline=10)
         
@@ -117,7 +114,7 @@ class Api:
             #logging.debug(respose.content)
             return json.loads(respose.content)
         else:
-            raise Exception(respose.status_code)
+            raise Exception(respose.status_code) 
 
     def is_domain_avaliable(self):
         try:
@@ -140,63 +137,28 @@ class Api:
         else:
             result = self._fetch("questions/%s" % (Api._csv_ids(ids),))
             
-        if 'questions' in result:
-            return result['questions']        
-        
-        return None
-
-    def user(self, id):
-        try:
-            result = self._fetch("users/%s" % (id,))
-        except:
-            return None
-        
-        if 'users' in result:
-            return result['users'][0]        
-        
-        return None
-
-    def user_tags(self, id, page=1):
-        result = self._fetch("users/%s/tags" % (id,), {'page': 1}) 
-        if 'tags' in result:
-            return (result["result"], result['tags'][0])        
-        
-        return (0, None)
-
-    def system_tags(self, id, page=1):
-        result = self._fetch("users/tags", {'page': 1}) 
-        if 'tags' in result:
-            return (result["result"], result['tags'][0])        
-        
-        return (0, None)
-
+        return result.get('items', None)        
+    
     def question_ansewrs(self, ids, pagesize=100, page=1):        
         result = self._fetch("questions/%s/answers" % (Api._csv_ids(ids),), {'page': page, 'pagesize': pagesize}) 
-        if 'answers' in result:
-            return (result["total"], result['answers'])
+        if 'items' in result:
+            return (result["total"], result['items'])
         
-        return [0, None]
+        return (0, [])
 
     def question_commments(self, ids, pagesize=100, page=1):        
         result = self._fetch("questions/%s/comments" % (Api._csv_ids(ids),), {'page': page, 'pagesize': pagesize}) 
-        if 'comments' in result:
-            return (result["total"], result['comments'])
+        if 'items' in result:
+            return (result["total"], result['items'])
         
-        return [0, None]
+        return (0, [])
 
     def users(self, pagesize=100, page=1):        
         result = self._fetch("users", {'page': page, 'pagesize': pagesize}) 
-        if 'users' in result:
-            return (result["total"], result['users'])
+        if 'items' in result:
+            return (result["total"], result['items'])
         
-        return [0, None]
-    
-    def question(self, id):        
-        result = self._fetch("questions/%s" % (id,)) 
-        if 'questions' in result:
-            return result['questions'][0]
-        
-        return None
+        return (0, [])
     
 class StackAuth(Api):
     def __init__(self):

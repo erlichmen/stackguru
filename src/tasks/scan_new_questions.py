@@ -1,13 +1,12 @@
 import logging
 import StackOverflow 
+import webapp2
 from google.appengine.api.taskqueue import Task, Queue
-from google.appengine.ext import webapp
-from google.appengine.ext.webapp.util import run_wsgi_app
 from publisher import Publisher
 from entities import QuestionsScanner
-import globals
+import guru_globals
 
-class ScanNewQuestions(webapp.RequestHandler):
+class ScanNewQuestions(webapp2.RequestHandler):
     def _scan(self, domain):
         api = StackOverflow.Api(domain)
         questions = api.questions()
@@ -42,7 +41,7 @@ class ScanNewQuestions(webapp.RequestHandler):
     def post(self, domain):
         self._scan(domain)
         
-class TaskNewQuestions(webapp.RequestHandler):            
+class TaskNewQuestions(webapp2.RequestHandler):            
     def _queue_tasks(self):
         scanners = QuestionsScanner.all()
         
@@ -62,10 +61,6 @@ class TaskNewQuestions(webapp.RequestHandler):
     def post(self):
         self._queue_tasks()
             
-application = webapp.WSGIApplication([('/tasks/scan_new_questions/', TaskNewQuestions), (r'/tasks/scan_new_questions/(.*)', ScanNewQuestions)], debug=globals.debug_mode)
-
-def main():
-    run_wsgi_app(application)
-
-if __name__ == "__main__":
-    main()
+app = webapp2.WSGIApplication([('/tasks/scan_new_questions', TaskNewQuestions), 
+                               ('/tasks/scan_new_questions/(.*)', ScanNewQuestions)], 
+                               debug=guru_globals.debug_mode)

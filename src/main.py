@@ -1,12 +1,8 @@
 from google.appengine.api import xmpp
-from google.appengine.ext import webapp
+import webapp2 
 from google.appengine.ext import db
-from google.appengine.ext.webapp.util import run_wsgi_app
 from google.appengine.ext.webapp import xmpp_handlers
-import globals
-import logging, math
-import GoogleSearch
-import StackOverflow
+import logging, GoogleSearch
 from entities import InvalidTag, FollowerId, Follower2
 from gen_utils import *
 from publisher import question_url
@@ -68,7 +64,7 @@ class XmppHandler(xmpp_handlers.CommandHandler):
         """search <text>\nsearch text using stackapps API\nreutrns links to the questions"""
         follower_id = self._get_current_follower(message)
         
-        domain = globals.default_domain if not follower_id.domain else follower_id.domain
+        domain = guru_globals.default_domain if not follower_id.domain else follower_id.domain
 
         api = StackOverflow.Api(domain)
         
@@ -79,7 +75,7 @@ class XmppHandler(xmpp_handlers.CommandHandler):
         """search <text>\nsearch text using Google custom search\nreutrns links to the questions"""
         follower_id = self._get_current_follower(message)
         
-        default_domain = globals.default_domain if not follower_id.domain else follower_id.domain
+        default_domain = guru_globals.default_domain if not follower_id.domain else follower_id.domain
         
         if default_domain != "stackoverflow.com":
             message.reply("Sorry but the google command works only on the stackoverflow domain")
@@ -195,7 +191,7 @@ class XmppHandler(xmpp_handlers.CommandHandler):
             followers_tags = list(follow_tag.unfollow_tags_all(follower_id))
             followers_questions = list(follow_question.unfollow_questions_all(follower_id))
         else:            
-            default_domain = globals.default_domain if not follower_id.domain else follower_id.domain
+            default_domain = guru_globals.default_domain if not follower_id.domain else follower_id.domain
             
             followers_tags = list(follow_tag.unfollow_tags(follower_id, {default_domain: tags}))
             followers_questions = list(follow_question.unfollow_questions(follower_id, {default_domain: tags}))
@@ -221,7 +217,7 @@ class XmppHandler(xmpp_handlers.CommandHandler):
         follower_id = self._get_current_follower(message)
         items = []
 
-        default_domain = globals.default_domain if not follower_id.domain else follower_id.domain        
+        default_domain = guru_globals.default_domain if not follower_id.domain else follower_id.domain        
                 
         for domain, tags in follow_tag.following_tags(follower_id.user).iteritems():
             for tag in tags:
@@ -257,7 +253,7 @@ class XmppHandler(xmpp_handlers.CommandHandler):
         logging.debug(tags)
         question_tags = {}
         actual_tags = {}
-        domain = globals.default_domain if not follower_id.domain else follower_id.domain
+        domain = guru_globals.default_domain if not follower_id.domain else follower_id.domain
         for tag in tags:        
             if tag.isdigit() == False:
                 logging.debug("following tag %s on %s" % (tag,domain,))
@@ -297,7 +293,7 @@ class XmppHandler(xmpp_handlers.CommandHandler):
     def follow_questions(self, message, follower_id, question_tags):
         msg = ""
         try:
-            default_domain = globals.default_domain if not follower_id.domain else follower_id.domain
+            default_domain = guru_globals.default_domain if not follower_id.domain else follower_id.domain
             
             for domain, questions in follow_question.follow_questions(follower_id, question_tags):
                 for question in questions:
@@ -319,45 +315,12 @@ class XmppHandler(xmpp_handlers.CommandHandler):
         pass
     
     def rank_command(self, message=None):
-        """rank <user id>\nCalculates the rank of user id, limited to the top 10000 users"""
+        """rank -> (deprecated) use the StackExchange league to know where you stand"""
         
         if len(message.arg) == 0:
-            msg = "rank [user id]"
+            msg = "(deprecated) use the StackExchange league to know where you stand"
             message.reply(msg)
             return
-        
-        follower_id = self._get_current_follower(message)
-        
-        domain = globals.default_domain if not follower_id.domain else follower_id.domain
-        
-        user_id = message.arg
-        api = StackOverflow.Api(domain)
-        user = api.user(user_id)
-        
-        if not user:
-            msg = "No such user on %s" % (domain, )
-            message.reply(msg)
-            return
-        
-        page_size = globals.ranks_page_size
-        limit = globals.ranks_limit
-        
-        user_id = int(user_id)
-        total, _ = api.users(pagesize=page_size)
-        max_pages = int(math.ceil(total / page_size))
-        total_pages = min(max_pages, limit / page_size) 
-        
-        page_min = 1
-        page_max = total_pages
-        reputation = user['reputation']
-        ttl = int(math.log(min(total, limit) / page_size) * 1.5)
-        
-        from ranks import RankTask
-        
-        RankTask.create_and_queue(message.sender, int(user_id), page_min, page_max, reputation, ttl, domain, page_size, limit, user['display_name'])
-            
-        msg = "Calculating the rank of %s, this might take some time..." % (user['display_name'],)
-        message.reply(msg)
     
     
     def domain_command(self, message=None):
@@ -365,7 +328,7 @@ class XmppHandler(xmpp_handlers.CommandHandler):
         follower_id = self._get_current_follower(message)
                 
         if len(message.arg) == 0:
-            domain = globals.default_domain if not follower_id.domain else follower_id.domain
+            domain = guru_globals.default_domain if not follower_id.domain else follower_id.domain
             msg = "Your default domain is %s" % (domain,)
             message.reply(msg)
             return
@@ -392,7 +355,7 @@ class XmppHandler(xmpp_handlers.CommandHandler):
 
         follower_id = self._get_current_follower(message)
         
-        default_domain = globals.default_domain if not follower_id.domain else follower_id.domain
+        default_domain = guru_globals.default_domain if not follower_id.domain else follower_id.domain
 
         question_id = message.arg
                         
@@ -440,10 +403,4 @@ class XmppHandler(xmpp_handlers.CommandHandler):
         message.reply(msg)
 
       
-application = webapp.WSGIApplication([('/_ah/xmpp/message/chat/', XmppHandler)], debug=globals.debug_mode)
-
-def main():
-    run_wsgi_app(application)
-
-if __name__ == "__main__":
-    main()
+app = webapp2.WSGIApplication([('/_ah/xmpp/message/chat/', XmppHandler)], debug=guru_globals.debug_mode)

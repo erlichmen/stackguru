@@ -1,6 +1,5 @@
-import globals
-from google.appengine.ext import webapp
-from google.appengine.ext.webapp.util import run_wsgi_app
+import guru_globals
+import webapp2 
 from google.appengine.ext import db
 from entities import Follower2, QuestionsScanner, InvalidTag
 from google.appengine.api import memcache
@@ -30,7 +29,7 @@ def delete_following_tags(user):
 def following_tags(user):
     ids = memcache.get(user.address, namespace="users_tags")
     if not ids:
-        tag_following_query = Follower2.gql('where follower=:1', user).fetch(globals.max_follow_tags)
+        tag_following_query = Follower2.gql('where follower=:1', user).fetch(guru_globals.max_follow_tags)
         items = [(tag_follow.domain, tag_follow.full_tag) for tag_follow in tag_following_query]
 
         ids = {}
@@ -42,7 +41,7 @@ def following_tags(user):
     return ids
     
 def unfollow_tags_all(follower_id):
-    follower_query = Follower2.all().filter('follower', follower_id.user).fetch(globals.max_follow_tags)
+    follower_query = Follower2.all().filter('follower', follower_id.user).fetch(guru_globals.max_follow_tags)
     
     delete_following_tags(follower_id.user)
     
@@ -50,7 +49,7 @@ def unfollow_tags_all(follower_id):
         yield follower
         
 def unfollow_tags(follower_id, tags_per_site):
-    follower_query = Follower2.all().filter('follower', follower_id.user).fetch(globals.max_follow_tags)
+    follower_query = Follower2.all().filter('follower', follower_id.user).fetch(guru_globals.max_follow_tags)
         
     delete_following_tags(follower_id.user)
     
@@ -70,7 +69,7 @@ def follow_tags(follower_id, tags_per_site):
     tag_following_query = Follower2.gql('where follower=:1', follower_id.user)
     count = tag_following_query.count() + sum_dict(tags_per_site)  
 
-    if (count >= globals.max_follow_tags):
+    if (count >= guru_globals.max_follow_tags):
         raise TooManyTags
                 
     for domain, tags in tags_per_site.iteritems():        
@@ -159,10 +158,6 @@ class UnfollowTagsHandler(TagHandler):
             
         self.handle_result(result)
         
-application = webapp.WSGIApplication([("/tag/(.*)", FollowTagsHandler), ("/untag/(.*)", UnfollowTagsHandler)], debug=globals.debug_mode)
-
-def main():
-    run_wsgi_app(application)
-
-if __name__ == "__main__":
-    main()
+app = webapp2.WSGIApplication([("/tag/(.*)", FollowTagsHandler), 
+                               ("/untag/(.*)", UnfollowTagsHandler)], 
+                              debug=guru_globals.debug_mode)
